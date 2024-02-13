@@ -1,7 +1,7 @@
 # Description
 This is a repository for the snakemake version of the bash GWAS pipeline compatible with the Clemson University's Center for Human Genetics (CUCHG) High Performance Computing (HPC) cluster. This version uses kinship matrix calculated from GEMMA. To use GCTA's ```--make-grm-inbred``` flag for GRM, swap ```Snakefile``` for ```Snakefile_GCTA``` in the ```snakemake_submitter.sh```.
 
-![Pipeline Schematic](https://github.com/vshanka23/<repo_name>/blob/main/pipeline_schematic.jpg)
+![Pipeline Schematic](https://github.com/vshanka23/dgrp_gwas_final/blob/main/pipeline_schematic.jpg)
 
 - *slurm/config.yaml*: config file for HPC architecture and slurm compatibility
 - *snakemake_submitter.sh*: initiates conda environment and submits the snakemake job to snakemake
@@ -63,7 +63,7 @@ DGRP-3-0010	DGRP-3-0010	23.6
 Phenotype files are automatically captured and fed into the workflow.
 
 1. Open ssh shell (using [MobaXterm](https://mobaxterm.mobatek.net/download-home-edition.html) or [Putty](https://www.putty.org/) on Windows, terminal app on Mac OS and Linux) and connect to the head/master/login node
-2. Make a working directory for the analysis and git clone this repository [(*git clone https://github.com/vshanka23/<repo_name>.git*)]
+2. Make a working directory for the analysis and git clone this repository [(*git clone https://github.com/vshanka23/dgrp_gwas_final.git*)]
 3. Copy *Snakefile*, *snakemake_submitter.sh*, *config.yaml*, *slurm/config.yaml* and *initiator.sh* to working directory
 4. Make sure the variables encompassed by "<>" in *slurm/config.yaml*, *config.yaml* and *snakemake_submitter.sh* have been modified to reflect info specific to your run (eg: working directory, raw data location, etc)
 5. Open a ssh shell and run:
