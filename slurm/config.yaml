@@ -1,0 +1,3 @@
+jobs: 50
+cluster: "sbatch -p <slurm job paritition name> -t {resources.time_min} --mem={resources.mem_mb} -c {resources.cpus} -o logs_slurm/{rule}_{wildcards} -e logs_slurm/{rule}_{wildcards} --mail-type=FAIL --mail-user=vshanka@clemson.edu"
+resources: [cpus=100, mem_mb=500000]
