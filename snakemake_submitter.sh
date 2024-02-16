@@ -8,7 +8,7 @@
 #SBATCH --output=<path to working directory>/log/test_output_%j.txt
 #SBATCH --error=<path to working directory>/log/test_error_%j.txt
 #SBATCH --mail-type=all
-#SBATCH --mail-user=vshanka@clemson.edu
+#SBATCH --mail-user=<uid@domain.edu>
 
 cd <path to working directory>/
 #mkdir -p ./{log,logs_slurm}
@@ -28,8 +28,4 @@ snakemake \
 --latency-wait 120
 
 #GEMMA with GCTA GRM (comment out the previous snakemake and uncomment next line if you want to run with GCTA GRM and --make-grm-inbred flag)
-#snakemake \
--s Snakefile_GCTA \
---profile slurm \
---configfile config.yaml \
---latency-wait 120
+#snakemake -s Snakefile_GCTA --profile slurm --configfile config.yaml --latency-wait 120

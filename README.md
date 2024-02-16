@@ -5,7 +5,7 @@ This is a repository for the snakemake version of the bash GWAS pipeline compati
 
 - ```slurm/config.yaml```: config file for HPC architecture and slurm compatibility
 - ```snakemake_submitter.sh```: initiates conda environment and submits the snakemake job to snakemake
-- ```initiator.sh```: sets up the directory and launches the *snakemake_submitted.sh*
+- ```initiator.sh```: sets up the directory and launches the *snakemake_submitter.sh*
 - ```Snakefile```: the pipeline
 - ```config.yaml```: environmental variables for the pipeline
 - ```inputs/```: directory with covariates and phenotype data
@@ -26,7 +26,7 @@ This is a repository for the snakemake version of the bash GWAS pipeline compati
 - [GSL](https://www.gnu.org/software/gsl/)
 
 # Instructions
-## Adding user- and project- specific information
+## I. Adding user- and project- specific information
 ***generally, add information encompassed by "<>" in the files below***
 - ```slurm/config.yaml```: 
     - add max number of jobs ([integer](https://en.wikipedia.org/wiki/Integer_(computer_science)))
@@ -44,7 +44,7 @@ This is a repository for the snakemake version of the bash GWAS pipeline compati
     - ***Only change this if you are not running on Secretariat.*** ```source``` line: add path to conda initiation script (```conda.sh```) to choose the right conda. There is also a mamba init line if you use mamba. Remove if there is no mamba installation.
     - conda activate line: add the name of the environment with a working snakemake installation (on Secretariat it is "snakemake").
 
-## Prepare the phenotype file
+# Prepare the phenotype file
 
 The phenotype file(s) must be placed within ```inputs/pheno/```. The phenotype file must be tab-delimited in this format:
 
@@ -91,6 +91,19 @@ If step 5 in test run (*Generate the DAG figure* and *Generate the workflow* com
 ./initiator.sh
 ```
 
+## Output
+
+The pipeline produces separate directories named based on the input phenotype file(s). Inside each of these directories, there are several intermediary files as well as a subdirectory names ```output```. This subdirectory contains the outputs of the association tests, visualizations and annotations:
+
+- ```*_grm.cXX.txt```: Genotype relationship matrix (only produced in this format if using GEMMA). 
+- ```*_.wald.assoc.txt```: The main output from GEMMA. This is the complete file, consisting of test output and stats from all the positions that were input into GEMMA.
+- ```*_.wald.assoc.FDR.txt```: The same file as above but with Benjamini Hochberg's FDR adjusted p-values appended as the last column.
+- ```_.wald.assoc.sorted.wh.txt```: The same file as the main output from GEMMA but sorted by ascending ```p_wald``` values.
+- ```_.wald.assoc.man.png```: The Manhattan plot visualization of the associations.
+- ```_.wald.assoc.qq.png```: The Q-Q plot visualization of the associations.
+- ```_.wald.assoc.sorted.filtered.wh.txt```: This is the sorted subset of the association file. It only includes ```p_wald < 0.001```. These are our 'top' hits.
+- ```_.wald.assoc.sorted.filtered.annot.csv```: This the 'top' hits file with VEP annotations derived from DGRP-3.
+
 # Tracking progress
 There are three places to check for progress:
 1. ```squeue```
@@ -98,4 +111,5 @@ There are three places to check for progress:
 3. In the ```logs_slurm``` directory, the most current log files with specific rule names on the file names represent the current statuses.
 
 # Future additions
-1. Need to add annotations from VEP on DGRP3.
+1. Covariate significance stats.
+2. List of covariates added into the model.
