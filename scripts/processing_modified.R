@@ -33,6 +33,10 @@ filter_input <- function(inv_file, wolb_file, pheno_file, filtered_pheno_name, f
   output <- as.data.frame(output)
   row.names(output) <- colnames(filtered_covar_temp)
   
+
+  # Maria Adonay found a bug! Depending on the selection of lines some covars can become all 0s resulting in an NA in the output vector.
+  output[is.na(output)] <- 1
+
   sig_covar <- cbind(c(rep(1, length(rownames(filtered_pheno)))),filtered_covar_temp[, row.names(output)[output[,1] < threshold], drop=FALSE])
   
   # Save significant covariates to the output file
