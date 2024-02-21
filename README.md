@@ -68,10 +68,11 @@ Phenotype files are automatically captured and fed into the workflow. ***Importa
 4. Make sure the variables encompassed by ```<>``` in ```slurm/config.yaml```, ```config.yaml``` and ```snakemake_submitter.sh``` have been modified to reflect info specific to your run (eg: working directory, raw data location, etc)
 5. Open a ssh shell and run:
     ```
-    ##Initialize the correct conda and bring conda into bash environment
-    source <path to conda initialization script>
-    ##Activate the correct conda environment containing snakemake installation
-    conda activate <snakemake conda environment>
+    ##Initialize the correct conda/mamba and bring conda/mamba into bash environment
+    source /opt/ohpc/pub/Software/mamba-rocky/etc/profile.d/conda.sh
+    source /opt/ohpc/pub/Software/mamba-rocky/etc/profile.d/mamba.sh
+    ##Activate the correct conda/mamba environment containing snakemake installation
+    conda activate snakemake
 
     cd <working directory containing analysis pipeline files>
     ```
@@ -83,6 +84,7 @@ Phenotype files are automatically captured and fed into the workflow. ***Importa
     ```
     snakemake -n -p -s Snakefile --configfile config.yaml --profile slurm
     ```
+    If you see just a single job with All, that there is nothing to do. This can happen if (i) you already successfully ran the entire pipeline and there is nothing to do, or (ii) you are missing your input for the workflow/pipeline. If the (ii) scenario is more appropriate for your situation, check your inputs (input files in ```input/``` directory and ```input/pheno/``` directory).
 
 ## II. Actual run (head/master/login node)
 
