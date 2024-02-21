@@ -60,10 +60,10 @@ DGRP-3-0008	DGRP-3-0008	15.8
 DGRP-3-0009	DGRP-3-0009	24.5
 DGRP-3-0010	DGRP-3-0010	23.6
 ```
-Phenotype files are automatically captured and fed into the workflow.
+Phenotype files are automatically captured and fed into the workflow. ***Important note: Make sure there are no empty rows or columns beyond your data in these text files***
 
 1. Open ssh shell (using [MobaXterm](https://mobaxterm.mobatek.net/download-home-edition.html) or [Putty](https://www.putty.org/) on Windows, terminal app on Mac OS and Linux) and connect to the head/master/login node
-2. Make a working directory for the analysis and ```git clone``` this repository [(```git clone https://github.com/vshanka23/dgrp_gwas_final.git```)]
+2. Make a working directory for the analysis. Ensure that git is configured correctly for your account (```git config --global core.autocrlf false```) and ```git clone``` this repository [(```git clone https://github.com/vshanka23/dgrp_gwas_final.git```)]
 3. Copy ```Snakefile``` (or ```Snakefile_GCTA```), ```snakemake_submitter.sh```, ```config.yaml```, ```slurm/```, ```inputs/```, ```scripts/``` and ```initiator.sh``` to working directory
 4. Make sure the variables encompassed by ```<>``` in ```slurm/config.yaml```, ```config.yaml``` and ```snakemake_submitter.sh``` have been modified to reflect info specific to your run (eg: working directory, raw data location, etc)
 5. Open a ssh shell and run:

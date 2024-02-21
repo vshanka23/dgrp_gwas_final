@@ -8,6 +8,8 @@ res <- cbind(data,wald_FDR)
 write.table(res, file=output_file,row.names=FALSE,col.names=TRUE,sep="\t")
 data_sorted <- data[order(data$p_wald),]
 data_sorted_filt <- data_sorted[data_sorted$p_wald < 0.001, ]
+#Sometimes test statistics are NA for some sites. The sort puts the NAs into the filtered data frame. This code remove those sites. Check this thread for developments: https://github.com/genetics-statistics/GEMMA/issues/184
+data_sorted_filt <- na.omit(data_sorted_filt) 
 write.table(data_sorted, file=sorted,row.names=FALSE,col.names=TRUE,sep="\t")
 write.table(data_sorted_filt, file=sorted_filt,row.names=FALSE,col.names=TRUE,sep="\t")
 }
