@@ -1,5 +1,5 @@
 # Function to filter and format covariates to use with GEMMA
-filter_input <- function(inv_file, wolb_file, pheno_file, filtered_pheno_name, filtered_covar_name, sig_covar_name, indiv_IDs_name, threshold) {
+filter_input <- function(inv_file, wolb_file, pheno_file, filtered_pheno_name, filtered_covar_name, sig_covar_name, sig_out_name, indiv_IDs_name, threshold) {
   # Read into R and format
   inv <- read.table(inv_file, header=TRUE, sep="\t", stringsAsFactors=FALSE, row.names=1)
   wolb <- read.table(wolb_file, header=TRUE, sep="\t", stringsAsFactors=FALSE, row.names=1)
@@ -41,7 +41,8 @@ filter_input <- function(inv_file, wolb_file, pheno_file, filtered_pheno_name, f
   
   # Save significant covariates to the output file
   write.table(sig_covar, file=sig_covar_name, sep="\t", quote = FALSE, row.names = FALSE, col.names = FALSE)
-  
+  # Save ANOVA results to separate output file. This is not used for downstream.
+  write.table(output, file=sig_out_name, sep="\t", quote = FALSE, row.names = TRUE, col.names = FALSE)
   # Write the merged data to the output file
   write.table(cbind(cbind(rownames(filtered_pheno)),filtered_pheno), file = filtered_pheno_name, sep = "\t", quote = FALSE, row.names = TRUE, col.names = FALSE)
   write.table(filtered_covar, file = filtered_covar_name, sep = "\t", quote = FALSE, row.names = FALSE, col.names = FALSE)
@@ -50,8 +51,8 @@ filter_input <- function(inv_file, wolb_file, pheno_file, filtered_pheno_name, f
 
 args <- commandArgs(trailingOnly=TRUE)
 
-if (length(args) != 8) {
-  stop("Usage: Rscript processing.R inv_file wolb_file pheno_file filtered_pheno filtered_covar sig_covar indiv_IDs threshold")
+if (length(args) != 9) {
+  stop("Usage: Rscript processing.R inv_file wolb_file pheno_file filtered_pheno filtered_covar sig_covar sig_out indiv_IDs threshold")
 }
 
 inv_file <- args[1]
@@ -60,7 +61,8 @@ pheno_file <- args[3]
 filtered_pheno_name <- args[4]
 filtered_covar_name <- args[5]
 sig_covar_name <- args[6]
-indiv_IDs_name <- args[7]
-threshold <- as.numeric(args[8])
+sig_out_name <- args[7]
+indiv_IDs_name <- args[8]
+threshold <- as.numeric(args[9])
 
-filter_input(inv_file, wolb_file, pheno_file, filtered_pheno_name, filtered_covar_name, sig_covar_name, indiv_IDs_name, threshold)
+filter_input(inv_file, wolb_file, pheno_file, filtered_pheno_name, filtered_covar_name, sig_covar_name, sig_out_name, indiv_IDs_name, threshold)
