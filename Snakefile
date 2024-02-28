@@ -22,7 +22,7 @@ rule input_filter:
         PHENO_FILT=config["DEST"]+"/{PHENO_UNIQ}/"+"{PHENO_UNIQ}"+"_filtered.txt",
         COVAR_FILT=config["DEST"]+"/{PHENO_UNIQ}/"+"DGRP-3_covar_filtered.txt",
         SIG_COVAR_FILT=config["DEST"]+"/{PHENO_UNIQ}/"+"DGRP-3_sig_covar_filtered.txt",
-        SIG_COVAR_NAME=config["DEST"]+"/{PHENO_UNIQ}/"+"DGRP-3_sig_covars.txt"
+        SIG_COVAR_NAME=config["DEST"]+"/{PHENO_UNIQ}/"+"DGRP-3_sig_covars.txt",
         TEST_INDIV=config["DEST"]+"/{PHENO_UNIQ}/"+"DGRP-3_association_test_indiv.txt"
     params:
         SCRIPT=config["SCRIPTS"]+"/"+"processing_modified.R",
