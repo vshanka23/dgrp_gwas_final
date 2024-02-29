@@ -4,6 +4,8 @@ library(qqman)
 res3 <- read.table(filename, header=T)
 new3<-data.frame(res3$rs, res3$chr, res3$ps, res3$p_wald)
 names(new3)<-c("SNP", "CHR", "BP", "P")
+#Added this line after EH and KC found a particular scenario where NAs in p_wald column affects the Max P math operation from Spencer's bug fix.
+new3 <- new3[!is.na(new3$P), ]
 png(output_qq_png)
 qq(new3$P)
 dev.off()
