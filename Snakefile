@@ -43,29 +43,29 @@ rule input_filter:
         {params.CUTOFF}
         """
 
-rule vcf_filter:
-    input:
-        TEST_INDIV=config["DEST"]+"/{PHENO_UNIQ}/"+"DGRP-3_association_test_indiv.txt",
-        VCF=config["VCF_LOC"]+"/"+config["VCF"]+".vcf.gz"
-    output:
-        FILT_VCF=config["DEST"]+"/{PHENO_UNIQ}/"+config["VCF"]+"_gemma.vcf.gz"
-    params:
-        THREADS=config["THREADS"]
-    resources: cpus=8, mem_mb=32000, time_min=1440
-    shell:
-        """
-        ml bcftools
-        bcftools view \
-        -Oz \
-        --threads {params.THREADS} \
-        -S {input.TEST_INDIV} \
-        {input.VCF} > \
-        {output.FILT_VCF}
-        """
+# rule vcf_filter:
+#     input:
+#         TEST_INDIV=config["DEST"]+"/{PHENO_UNIQ}/"+"DGRP-3_association_test_indiv.txt",
+#         VCF=config["VCF_LOC"]+"/"+config["VCF"]+".vcf.gz"
+#     output:
+#         FILT_VCF=config["DEST"]+"/{PHENO_UNIQ}/"+config["VCF"]+"_gemma.vcf.gz"
+#     params:
+#         THREADS=config["THREADS"]
+#     resources: cpus=8, mem_mb=32000, time_min=1440
+#     shell:
+#         """
+#         ml bcftools
+#         bcftools view \
+#         -Oz \
+#         --threads {params.THREADS} \
+#         -S {input.TEST_INDIV} \
+#         {input.VCF} > \
+#         {output.FILT_VCF}
+#         """
 
 rule convert_2_plink:
     input:
-        FILT_VCF=config["DEST"]+"/{PHENO_UNIQ}/"+config["VCF"]+"_gemma.vcf.gz",
+        FILT_VCF=cconfig["VCF_LOC"]+"/"+config["VCF"]+".vcf.gz",
         PHENO_FILT=config["DEST"]+"/{PHENO_UNIQ}/"+"{PHENO_UNIQ}"+"_filtered.txt"
     output:
         FAM=config["DEST"]+"/{PHENO_UNIQ}/"+config["BFILE"]+".fam"
@@ -85,6 +85,7 @@ rule convert_2_plink:
             --double-id \
             --geno {params.GENO} \
             --pheno {input.PHENO_FILT} \
+            --prune \
             --maf {params.MAF} \
             --chr {params.CHR} \
             --out {params.BFILE}
