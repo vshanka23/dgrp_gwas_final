@@ -113,6 +113,7 @@ rule make_grm:
             gemma-0.98.5-linux-static-AMD64 \
             -bfile {params.BFILE} \
             -gk 1 \
+            -miss 1 \
             -o {params.GRM} \
         """
 
@@ -145,6 +146,7 @@ rule association:
             -k {input.KIN} \
             -lmm {params.LMM} \
             -maf {params.MAF} \
+            -miss 1 \
             -o {params.ONAME} \
             -c {input.SIG_COVAR_FILT}
         """

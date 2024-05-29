@@ -164,6 +164,7 @@ rule association:
             -k {input.KIN} \
             -lmm {params.LMM} \
             -maf {params.MAF} \
+            -miss 1 \
             -o {params.ONAME} \
             -c {input.SIG_COVAR_FILT}
         """
