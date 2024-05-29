@@ -11,15 +11,34 @@ new3$CHR <- new3$CHR+1
 new3$CHR[new3$CHR==8]<-1
 #Removing chromsome Y and MT
 new3 <- new3[new3$CHR<7,]
-png(output_qq_png)
+#png(output_qq_png)
+#qq(new3$P)
+#dev.off()
+
+tiff(paste(output_qq_png,".tiff"), width = 6, height = 6, units = 'in', res = 600)
 qq(new3$P)
 dev.off()
-png(output_man_png)
-#Spencer Hatfield identified some associations where some p-values were < 1E-10. These were being omitted because of the hard coded ylim in the plot. His solution is below:
+
+# png(output_man_png)
+# #Spencer Hatfield identified some associations where some p-values were < 1E-10. These were being omitted because of the hard coded ylim in the plot. His solution is below:
+# max_p <- max(-log10(new3$P))
+# ylim_max <- ifelse(max_p > 10, max_p, 10)
+# manhattan(new3, main = "Manhattan Plot", ylim = c(0, ylim_max), cex = 0.6, cex.axis = 0.9, col = c("purple3", "orange3"), suggestiveline = F, genomewideline = F, chrlabs = c("X","2L","2R","3L","3R","4"))
+# dev.off()
+
+#setEPS()
+#postscript(paste(output_man_png,".eps",sep=""))
+#max_p <- max(-log10(new3$P))
+#ylim_max <- ifelse(max_p > 10, max_p, 10)
+#manhattan(new3, main = "Manhattan Plot", ylim = c(0, ylim_max), cex = 0.6, cex.axis = 0.9, col = c("purple3", "orange3"), suggestiveline = F, genomewideline = F, chrlabs = c("X","2L","2R","3L","3R","4"))
+#dev.off()
+
+tiff(paste(output_man_png,".tiff"), width = 6, height = 6, units = 'in', res = 600)
 max_p <- max(-log10(new3$P))
 ylim_max <- ifelse(max_p > 10, max_p, 10)
 manhattan(new3, main = "Manhattan Plot", ylim = c(0, ylim_max), cex = 0.6, cex.axis = 0.9, col = c("purple3", "orange3"), suggestiveline = F, genomewideline = F, chrlabs = c("X","2L","2R","3L","3R","4"))
 dev.off()
+
 }
 
 args <- commandArgs(trailingOnly=TRUE)
