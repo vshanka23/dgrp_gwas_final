@@ -65,7 +65,7 @@ rule input_filter:
 
 rule convert_2_plink:
     input:
-        FILT_VCF=cconfig["VCF_LOC"]+"/"+config["VCF"]+".vcf.gz",
+        FILT_VCF=config["VCF_LOC"]+"/"+config["VCF"]+".vcf.gz",
         PHENO_FILT=config["DEST"]+"/{PHENO_UNIQ}/"+"{PHENO_UNIQ}"+"_filtered.txt"
     output:
         FAM=config["DEST"]+"/{PHENO_UNIQ}/"+config["BFILE"]+".fam"
