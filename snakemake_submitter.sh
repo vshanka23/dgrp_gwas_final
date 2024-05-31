@@ -25,7 +25,8 @@ snakemake \
 -s Snakefile \
 --profile slurm \
 --configfile config.yaml \
---latency-wait 120
+--latency-wait 120 \
+-p
 
 #GEMMA with GCTA GRM (comment out the previous snakemake and uncomment next line if you want to run with GCTA GRM and --make-grm-inbred flag)
 #snakemake -s Snakefile_GCTA --profile slurm --configfile config.yaml --latency-wait 120

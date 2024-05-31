@@ -15,7 +15,7 @@ new3 <- new3[new3$CHR<7,]
 #qq(new3$P)
 #dev.off()
 
-tiff(paste(output_qq_png,".tiff"), width = 6, height = 6, units = 'in', res = 600)
+tiff(output_qq_png, width = 6, height = 6, units = 'in', res = 300)
 qq(new3$P)
 dev.off()
 
@@ -33,7 +33,7 @@ dev.off()
 #manhattan(new3, main = "Manhattan Plot", ylim = c(0, ylim_max), cex = 0.6, cex.axis = 0.9, col = c("purple3", "orange3"), suggestiveline = F, genomewideline = F, chrlabs = c("X","2L","2R","3L","3R","4"))
 #dev.off()
 
-tiff(paste(output_man_png,".tiff"), width = 6, height = 6, units = 'in', res = 600)
+tiff(output_man_png, width = 6, height = 6, units = 'in', res = 300)
 max_p <- max(-log10(new3$P))
 ylim_max <- ifelse(max_p > 10, max_p, 10)
 manhattan(new3, main = "Manhattan Plot", ylim = c(0, ylim_max), cex = 0.6, cex.axis = 0.9, col = c("purple3", "orange3"), suggestiveline = F, genomewideline = F, chrlabs = c("X","2L","2R","3L","3R","4"))

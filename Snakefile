@@ -9,8 +9,8 @@ rule all:
         expand(config["DEST"]+"/{PHENO_UNIQ}/"+"output/"+"{PHENO_UNIQ}"+".wald.assoc.FDR.txt",PHENO_UNIQ=PHENO_UNIQ),
         expand(config["DEST"]+"/{PHENO_UNIQ}/"+"output/"+"{PHENO_UNIQ}"+".wald.assoc.sorted.wh.txt",PHENO_UNIQ=PHENO_UNIQ),
         expand(config["DEST"]+"/{PHENO_UNIQ}/"+"output/"+"{PHENO_UNIQ}"+".wald.assoc.sorted.filtered.wh.txt",PHENO_UNIQ=PHENO_UNIQ),
-        expand(config["DEST"]+"/{PHENO_UNIQ}/"+"output/"+"{PHENO_UNIQ}"+".wald.assoc.man.png",PHENO_UNIQ=PHENO_UNIQ),
-        expand(config["DEST"]+"/{PHENO_UNIQ}/"+"output/"+"{PHENO_UNIQ}"+".wald.assoc.qq.png",PHENO_UNIQ=PHENO_UNIQ),
+        expand(config["DEST"]+"/{PHENO_UNIQ}/"+"output/"+"{PHENO_UNIQ}"+".wald.assoc.man.tiff",PHENO_UNIQ=PHENO_UNIQ),
+        expand(config["DEST"]+"/{PHENO_UNIQ}/"+"output/"+"{PHENO_UNIQ}"+".wald.assoc.qq.tiff",PHENO_UNIQ=PHENO_UNIQ),
         expand(config["DEST"]+"/{PHENO_UNIQ}/"+"output/"+"{PHENO_UNIQ}"+".wald.assoc.sorted.filtered.annot.csv",PHENO_UNIQ=PHENO_UNIQ)
 
 rule input_filter:
@@ -113,7 +113,6 @@ rule make_grm:
             gemma-0.98.5-linux-static-AMD64 \
             -bfile {params.BFILE} \
             -gk 1 \
-            -miss 1 \
             -o {params.GRM} \
         """
 
@@ -146,7 +145,6 @@ rule association:
             -k {input.KIN} \
             -lmm {params.LMM} \
             -maf {params.MAF} \
-            -miss 1 \
             -o {params.ONAME} \
             -c {input.SIG_COVAR_FILT}
         """
@@ -158,8 +156,8 @@ rule post_processing:
         FDR=config["DEST"]+"/{PHENO_UNIQ}/"+"output/"+"{PHENO_UNIQ}"+".wald.assoc.FDR.txt",
         SORTED=config["DEST"]+"/{PHENO_UNIQ}/"+"output/"+"{PHENO_UNIQ}"+".wald.assoc.sorted.wh.txt",
         SORTED_FILT=config["DEST"]+"/{PHENO_UNIQ}/"+"output/"+"{PHENO_UNIQ}"+".wald.assoc.sorted.filtered.wh.txt",
-        MAN=config["DEST"]+"/{PHENO_UNIQ}/"+"output/"+"{PHENO_UNIQ}"+".wald.assoc.man.png",
-        QQ=config["DEST"]+"/{PHENO_UNIQ}/"+"output/"+"{PHENO_UNIQ}"+".wald.assoc.qq.png"
+        MAN=config["DEST"]+"/{PHENO_UNIQ}/"+"output/"+"{PHENO_UNIQ}"+".wald.assoc.man.tiff",
+        QQ=config["DEST"]+"/{PHENO_UNIQ}/"+"output/"+"{PHENO_UNIQ}"+".wald.assoc.qq.tiff"
     params:
         PROC=config["SCRIPTS"]+"/"+"adjust_fdr.R",
         FIG=config["SCRIPTS"]+"/"+"make_figures.R"
