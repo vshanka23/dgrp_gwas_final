@@ -4,7 +4,7 @@ VCF: "DGRP-3_final_biallelic_ID_sample-chr-rename_nohet"
 VCF_LOC: "/data/Palmetto_sync/Projects/vshanka_dgrp3_dna/4_varcall/"
 BFILE: "DGRP-3_plink_filtered"
 SCRIPTS: "scripts"
-VEP: "/data/Palmetto_sync/Projects/vshanka_dgrp3_dna/4_varcall/5_annotation/DGRP-3_final_biallelic.VEP_metarem.txt"
+VEP: "/data/Palmetto_sync/Projects/vshanka_dgrp3_dna/4_varcall/5_annotation/DGRP-3_final_biallelic.VEP_metarem_v3.txt"
 GENE: "/data/databases/d_mel/d_mel_6.13_ncbi/gene_map_table_fb_2023_06.tsv"
 CUTOFF: 0.1
 GENO: 0.1

@@ -11,7 +11,7 @@ rule all:
         expand(config["DEST"]+"/{PHENO_UNIQ}/"+"output/"+"{PHENO_UNIQ}"+".wald.assoc.sorted.filtered.wh.txt",PHENO_UNIQ=PHENO_UNIQ),
         expand(config["DEST"]+"/{PHENO_UNIQ}/"+"output/"+"{PHENO_UNIQ}"+".wald.assoc.man.tiff",PHENO_UNIQ=PHENO_UNIQ),
         expand(config["DEST"]+"/{PHENO_UNIQ}/"+"output/"+"{PHENO_UNIQ}"+".wald.assoc.qq.tiff",PHENO_UNIQ=PHENO_UNIQ),
-        expand(config["DEST"]+"/{PHENO_UNIQ}/"+"output/"+"{PHENO_UNIQ}"+".wald.assoc.sorted.filtered.annot.csv",PHENO_UNIQ=PHENO_UNIQ)
+        expand(config["DEST"]+"/{PHENO_UNIQ}/"+"output/"+"{PHENO_UNIQ}"+".wald.assoc.sorted.filtered.annot.xlsx",PHENO_UNIQ=PHENO_UNIQ)
 
 rule input_filter:
     input:
@@ -175,14 +175,16 @@ rule annotate:
         VEP=config["VEP"],
         GENE=config["GENE"]
     output:
-        config["DEST"]+"/{PHENO_UNIQ}/"+"output/"+"{PHENO_UNIQ}"+".wald.assoc.sorted.filtered.annot.csv"
+        config["DEST"]+"/{PHENO_UNIQ}/"+"output/"+"{PHENO_UNIQ}"+".wald.assoc.sorted.filtered.annot.xlsx"
     params:
-        config["SCRIPTS"]+"/"+"VEP_annotate.py"
+        SCRIPT=config["DEST"]+"/"+config["SCRIPTS"]+"/"+"VEP_annotate.py",
+        WORKDIR=config["DEST"]+"/{PHENO_UNIQ}/"+"output/"
     resources: cpus=1, mem_mb=32000, time_min=1440
     shell:
         """
+        cd {params.WORKDIR}
         source /opt/ohpc/pub/Software/mamba-rocky/etc/profile.d/conda.sh
         source /opt/ohpc/pub/Software/mamba-rocky/etc/profile.d/mamba.sh
-        conda activate notebook_env
-        python3 {params} {input.VEP} {input.SORTED_FILT} {input.GENE} {output}
+        conda activate pandas
+        python3 {params.SCRIPT} -v {input.VEP} -i {input.SORTED_FILT} -g {input.GENE} -o {output}
         """
