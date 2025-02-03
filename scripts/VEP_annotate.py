@@ -14,6 +14,9 @@ def main(input_gwas, input_vep, input_gene, output_excel):
     raw = pd.read_csv(input_vep, sep="\t")
     gene_symbol = pd.read_csv(input_gene, sep="\t")
 
+    #Bug fix for MT variants
+    gwas = gwas[~gwas.rs.str.contains("MT_")]
+
     # Step 2: Filter and merge data
     filt = raw[raw["#Uploaded_variation"].isin(gwas["rs"].tolist())]
     annot = pd.merge(filt, gwas, how='outer', left_on="#Uploaded_variation", right_on="rs")
