@@ -14,9 +14,6 @@ def main(input_gwas, input_vep, input_gene, output_excel):
     raw = pd.read_csv(input_vep, sep="\t")
     gene_symbol = pd.read_csv(input_gene, sep="\t")
 
-    #Bug fix for MT variants
-    gwas = gwas[~gwas.rs.str.contains("MT_")]
-
     # Step 2: Filter and merge data
     filt = raw[raw["#Uploaded_variation"].isin(gwas["rs"].tolist())]
     annot = pd.merge(filt, gwas, how='outer', left_on="#Uploaded_variation", right_on="rs")
@@ -56,6 +53,8 @@ def main(input_gwas, input_vep, input_gene, output_excel):
     
     # Replace NaN values with "-"
     annot3 = annot3.replace(np.NaN, '-')
+
+    annot3 = annot3.sort_values(by="Wald Test P-Value", ascending=True)
 
     # Step 4: Round the necessary columns
     annot3["Minor Allele Frequency"] = annot3["Minor Allele Frequency"].round(3)
