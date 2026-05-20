@@ -1,0 +1,100 @@
+configfile: "config.yaml"
+
+import os
+import re
+
+dir_path = config["SOURCE"]
+
+files = os.listdir(dir_path)
+
+pattern = r'(DGRP-3-[0-9]+_S\d+)'
+
+parsed_file_names = set()
+
+for file in files:
+    match = re.match(pattern, file)
+    if match:
+        parsed_file_names.add(match.group(1))
+
+parsed_file_names = list(parsed_file_names) 
+
+print(parsed_file_names)
+
+rule all:
+    input:
+        config["WORKDIR"]+"/"+"clade_reads_reformated.csv"
+
+
+#filter out unmapped reads 
+rule filter_unmapped_reads:
+  input:
+    config["SOURCE"]+"/"+"{sample}_recal.bam"
+  output:
+    O1=config["WORKDIR"]+"/"+"{sample}_R1.fq",
+    O2=config["WORKDIR"]+"/"+"{sample}_R2.fq"
+  resources: slurm_partition='zenyatta', cpus=4,mem_mb=10000,time_min=1440
+  shell:
+        """
+            module load samtools/1.10
+            samtools fastq -f 4 -@ 8 {input} -1 {output.O1} -2 {output.O2} -0 /dev/null -s /dev/null -n
+        """
+
+#run yamp pipeline for each sample
+
+#changes will need to be made if not using YAMP install under jkbrook
+#need to make sure that cd command is changed to working directory 
+rule yamp_pipeline:
+    input:
+        I1=config["WORKDIR"]+"/"+"{sample}_R1.fq",
+        I2=config["WORKDIR"]+"/"+"{sample}_R2.fq"
+    output:
+        bug_list=config["WORKDIR"]+"/"+"{sample}"+"/"+"{sample}_metaphlan_bugs_list.tsv"
+    params:
+        OUTPUT=config["WORKDIR"]+"/"
+    resources: slurm_partition='zenyatta', cpus=4,mem_mb=32000,time_min=1440
+    shell:
+        """
+            source /opt/ohpc/pub/Software/mamba-rocky/etc/profile.d/conda.sh
+            source /opt/ohpc/pub/Software/mamba-rocky/etc/profile.d/mamba.sh
+            conda activate nextflow
+            module load singularity
+            cd /data/gsl/bsl/jkbrook/Varient_Calling_YAMP/modified_workflow
+            nextflow run /data/gsl/bsl/jkbrook/YAMP/YAMP/YAMP.nf --reads1 {input.I1} --reads2 {input.I2} --prefix {wildcards.sample} --outdir {params.OUTPUT}  --mode characterisation -profile test,singularity
+        """
+     
+rule extract_metaphlan_data:
+    input:
+        sample_files=expand(config["WORKDIR"]+"/"+"{sample}"+"/"+"{sample}_metaphlan_bugs_list.tsv", sample=parsed_file_names),
+        relative_abundance=config["YAMP_SCRIPTS"]+"/"+"extract_relative_abundance.py",
+        reads=config["YAMP_SCRIPTS"]+"/"+"extract_reads.py"
+    output:
+        relative_abundance_output=config["WORKDIR"]+"/"+"clade_abundance.csv",
+        reads_output=config["WORKDIR"]+"/"+"clade_reads.csv"
+    resources: slurm_partition='zenyatta', cpus=1,mem_mb=8000,time_min=1440
+    shell:
+        """
+            source /opt/ohpc/pub/Software/mamba-rocky/etc/profile.d/conda.sh
+            source /opt/ohpc/pub/Software/mamba-rocky/etc/profile.d/mamba.sh
+            conda activate pandas
+            python3 {input.relative_abundance}
+            python3 {input.reads}
+        """
+        
+rule reformat_metaphlan_data:
+    input:
+        sample_files=expand(config["WORKDIR"]+"/"+"{sample}"+"/"+"{sample}_metaphlan_bugs_list.tsv", sample=parsed_file_names),
+        reformat_script=config["YAMP_SCRIPTS"]+"/"+"reformat_metaphlan.py",
+        relative_abundance=config["WORKDIR"]+"/"+"clade_abundance.csv",
+        reads=config["WORKDIR"]+"/"+"clade_reads.csv"
+    output:
+        relative_abundance_output=config["WORKDIR"]+"/"+"clade_abundance_reformated.csv",
+        reads_output=config["WORKDIR"]+"/"+"clade_reads_reformated.csv"
+    resources: slurm_partition='zenyatta', cpus=1,mem_mb=8000,time_min=1440
+    shell:
+        """
+            source /opt/ohpc/pub/Software/mamba-rocky/etc/profile.d/conda.sh
+            source /opt/ohpc/pub/Software/mamba-rocky/etc/profile.d/mamba.sh
+            conda activate pandas
+            python3 {input.reformat_script} -i {input.relative_abundance} -o {output.relative_abundance_output}
+            python3 {input.reformat_script} -i {input.reads} -o {output.reads_output}
+        """

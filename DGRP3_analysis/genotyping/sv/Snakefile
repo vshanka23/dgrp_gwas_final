@@ -1,0 +1,270 @@
+configfile: "DGRP3_varcall.yaml"
+
+SAMPLES=sorted(glob_wildcards(config["SOURCE"]+"/{samples}"+config["EXT"]).samples)
+SAMPLES_NF=[]
+import re
+for item in SAMPLES:
+	var1=re.sub('_L00[1-2]_R[1-2]','',str(item))
+	SAMPLES_NF.append(var1)
+
+SAMPLES_SET = set(SAMPLES_NF)
+SAMPLES_UNIQ = list(SAMPLES_SET)
+
+rule all:
+	input:
+		config["DEST"]+"/6_Manta_SV/results/variants/diploidSV.vcf.gz"
+
+rule merge_forward_lanes:
+	input:
+		L1=config["SOURCE"]+"/{SAMPLES_UNIQ}_L001_R1"+config["EXT"],
+		L2=config["SOURCE"]+"/{SAMPLES_UNIQ}_L002_R1"+config["EXT"]
+	output:
+		config["DEST"]+"/1_mergelane/{SAMPLES_UNIQ}_R1"+config["EXT"]
+	resources: cpus=1, mem_mb=10000, time_min=1440
+	shell:
+		"""
+		cat {input.L1} {input.L2} > {output}
+		"""
+rule merge_reverse_lanes:
+	input:
+		L1=config["SOURCE"]+"/{SAMPLES_UNIQ}_L001_R2"+config["EXT"],
+		L2=config["SOURCE"]+"/{SAMPLES_UNIQ}_L002_R2"+config["EXT"]
+	output:
+		config["DEST"]+"/1_mergelane/{SAMPLES_UNIQ}_R2"+config["EXT"]
+	resources: cpus=1, mem_mb=10000, time_min=1440
+	shell:
+		"""
+		cat {input.L1} {input.L2} > {output}
+		"""
+rule qc:
+	input:
+		R1=config["DEST"]+"/1_mergelane/{SAMPLES_UNIQ}_R1"+config["EXT"],
+		R2=config["DEST"]+"/1_mergelane/{SAMPLES_UNIQ}_R2"+config["EXT"]
+	output:
+		R1=config["DEST"]+"/2_qc/{SAMPLES_UNIQ}_R1"+config["EXT"],
+		R2=config["DEST"]+"/2_qc/{SAMPLES_UNIQ}_R2"+config["EXT"],
+		html=config["DEST"]+"/2_qc/{SAMPLES_UNIQ}.html",
+		json=config["DEST"]+"/2_qc/{SAMPLES_UNIQ}.json"
+	resources: cpus=4, mem_mb=20000, time_min=1440
+	shell:
+		"""
+		module add fastp
+		fastp \
+		--thread 4 \
+		-i {input.R1} \
+		-I {input.R2} \
+		-o {output.R1} \
+		-O {output.R2} \
+		-h {output.html} \
+		-j {output.json}
+		"""
+		
+rule align_bwa_mem:
+	input:
+		R1=config["DEST"]+"/2_qc/{SAMPLES_UNIQ}_R1"+config["EXT"],
+		R2=config["DEST"]+"/2_qc/{SAMPLES_UNIQ}_R2"+config["EXT"]
+	output:
+		config["DEST"]+"/3_align/1_rawbam/{SAMPLES_UNIQ}.bam"
+	params:
+		config["INDEX_REF"]
+	resources: cpus=8, mem_mb=20000, time_min=1440
+	shell:
+		"""
+		module add samtools/1.10
+		module add bwa/0.7.17
+		bwa mem \
+		-M \
+		-t 8 \
+		-R "@RG\\tID:{wildcards.SAMPLES_UNIQ}\\tPL:Illumina\\tLB:L001\\tSM:{wildcards.SAMPLES_UNIQ}\\tPU:001" \
+		{params} \
+		{input.R1} \
+		{input.R2} | \
+		samtools view -Sb - \
+		> {output};
+		"""
+
+rule bam_sort:
+	input:
+		config["DEST"]+"/3_align/1_rawbam/{SAMPLES_UNIQ}.bam"
+	output:
+		config["DEST"]+"/3_align/2_sort/{SAMPLES_UNIQ}_rsort.bam"
+	params:
+		config["DEST"]+"/3_align/1_rawbam/tmp_{SAMPLES_UNIQ}"
+	resources: cpus=8, mem_mb=20000, time_min=1440
+	shell:
+		"""
+		module add samtools/1.10
+		samtools sort \
+		-n \
+		-@ 8 \
+		-T {params} \
+		-o {output} \
+		{input} ;
+		"""
+
+rule bam_fixmate:
+	input:
+		config["DEST"]+"/3_align/2_sort/{SAMPLES_UNIQ}_rsort.bam"
+	output:
+		config["DEST"]+"/3_align/3_fixmate/{SAMPLES_UNIQ}_fixmate.bam"
+	resources: cpus=8, mem_mb=20000, time_min=1440
+	shell:
+		"""
+		module add samtools/1.10
+		samtools fixmate \
+		-m \
+		-@ 8 \
+		{input} \
+		{output} ;
+		"""
+
+rule bam_possort:
+	input:
+		config["DEST"]+"/3_align/3_fixmate/{SAMPLES_UNIQ}_fixmate.bam"
+	output:
+		config["DEST"]+"/3_align/4_possort/{SAMPLES_UNIQ}_psort.bam"
+	params:
+		config["DEST"]+"/3_align/4_possort/temp_{SAMPLES_UNIQ}"
+	resources: cpus=8, mem_mb=20000, time_min=1440
+	shell:
+		"""
+		module add samtools/1.10
+		samtools sort \
+		-@ 8 \
+		-T {params} \
+		-o {output} \
+		{input} ;
+		"""
+
+rule bam_markdup:
+	input:
+		config["DEST"]+"/3_align/4_possort/{SAMPLES_UNIQ}_psort.bam"
+	output:
+		config["DEST"]+"/3_align/5_dedup/{SAMPLES_UNIQ}_dedup.bam"
+	resources: cpus=8, mem_mb=20000, time_min=1440
+	shell:
+		"""
+		module add samtools/1.10
+		samtools markdup \
+		-s \
+		-@ 8 \
+		{input} \
+		{output} ;
+		"""
+
+rule bam_index:
+	input:
+		config["DEST"]+"/3_align/5_dedup/{SAMPLES_UNIQ}_dedup.bam"
+	output:
+		config["DEST"]+"/3_align/5_dedup/{SAMPLES_UNIQ}_dedup.bam.bai"
+	resources: cpus=8, mem_mb=20000, time_min=1440
+	shell:
+		"""
+		module add samtools/1.10
+		samtools index \
+		-@ 8 \
+		{input} \
+		{output} ;
+		"""
+
+rule picard_readgroup:
+	input:
+		config["DEST"]+"/3_align/5_dedup/{SAMPLES_UNIQ}_dedup.bam"
+	output:
+		config["DEST"]+"/3_align/5_dedup/{SAMPLES_UNIQ}_rg.bam"
+	resources: cpus=8, mem_mb=20000, time_min=1440
+	shell:
+		"""
+		module add java_jdk/1.8.231
+		module add picard/2.21.7
+		module add gatk/4.1.4.1
+		java -jar $PICARDJARPATH/picard.jar \
+		AddOrReplaceReadGroups \
+		I={input} \
+		O={output} \
+		SORT_ORDER=coordinate \
+		RGID=NovaSeq \
+		RGLB=L001 \
+		RGPL=Illumina \
+		RGPU=001 \
+		RGSM={wildcards.SAMPLES_UNIQ} \
+		CREATE_INDEX=True ;
+		"""
+
+rule bqsr:
+	input:
+		bam=config["DEST"]+"/3_align/5_dedup/{SAMPLES_UNIQ}_rg.bam",
+		knownvcf=config["KNOWNVCF"]
+	output:
+		config["DEST"]+"/3_align/6_bqsr/{SAMPLES_UNIQ}_recaltable.grp"
+	params:
+		config["REF"]
+	resources: cpus=10, mem_mb=40000, time_min=1440
+	shell:
+		"""
+		module add java_jdk/1.8.231
+		module add picard/2.21.7 
+		module add gatk/4.1.4.1
+		module add htslib/1.9
+		gatk BaseRecalibrator \
+		-R {params} \
+		-I {input.bam} \
+		--known-sites {input.knownvcf} \
+		-O {output} ;
+		"""
+
+rule recalibrate:
+	input:
+		bam=config["DEST"]+"/3_align/5_dedup/{SAMPLES_UNIQ}_rg.bam",
+		recaltable=config["DEST"]+"/3_align/6_bqsr/{SAMPLES_UNIQ}_recaltable.grp"
+	output:
+		config["DEST"]+"/3_align/6_bqsr/{SAMPLES_UNIQ}_recal.bam"
+	params:
+		config["REF"]
+	resources: cpus=10, mem_mb=40000, time_min=1440
+	shell:
+		"""
+		module add java_jdk/1.8.231
+		module add picard/2.21.7 
+		module add gatk/4.1.4.1
+		module add htslib/1.9
+		gatk ApplyBQSR \
+		-R {params} \
+		-I {input.bam} \
+		-bqsr {input.recaltable} \
+		-O {output} ;
+		"""
+
+##
+rule Manta_setup:
+	input:
+		samples=expand(config["DEST"]+"/3_align/6_bqsr/{SAMPLES_UNIQ}_recal.bam",SAMPLES_UNIQ=SAMPLES_UNIQ),
+		ref=config["REF"]
+	output:
+		config["DEST"]+"/6_Manta_SV/runWorkflow.py"
+	params:
+		outdir=config["DEST"]+"/6_Manta_SV/"
+	resources: cpus=1, mem_mb=4000, time_min=180
+	shell:
+		"""
+		source /opt/ohpc/pub/Software/mamba-rocky/etc/profile.d/conda.sh
+		source /opt/ohpc/pub/Software/mamba-rocky/etc/profile.d/mamba.sh
+		mamba activate manta
+		bam_list=$(echo {input.samples} | sed 's/ / --bam /g' | sed 's/^/--bam /')
+		configManta.py $bam_list --referenceFasta {input.ref} --runDir {params.outdir}
+		"""
+
+rule Manta_run:
+	input:
+		config["DEST"]+"/6_Manta_SV/runWorkflow.py"
+	output:
+		config["DEST"]+"/6_Manta_SV/results/variants/diploidSV.vcf.gz"
+	resources: cpus=20, mem_mb=10000, time_min=14400
+	shell:
+		"""
+		ulimit -n 65535
+                source /opt/ohpc/pub/Software/mamba-rocky/etc/profile.d/conda.sh
+                source /opt/ohpc/pub/Software/mamba-rocky/etc/profile.d/mamba.sh
+                mamba activate manta
+		{input} -j 4
+		"""

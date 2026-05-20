@@ -1,0 +1,205 @@
+import os
+import glob
+import re
+
+my_regex=config["SOURCE"]+"/set[0-9]*/4_varcall/*_g.vcf"
+FILENAMES=glob.glob(my_regex)
+
+SAMPLE_NAMES=[]
+my_regex2 = config["SOURCE"]+"/set\d*/4_varcall/"
+print(my_regex2)
+for item in FILENAMES:
+    var1=re.sub(my_regex2,'',str(item))
+    var2=re.sub(r'_S\d*_recal_g.vcf','',str(var1))
+    SAMPLE_NAMES.append(var2)
+
+dict1=dict(zip(SAMPLE_NAMES,FILENAMES))
+
+rule all:
+	input:
+		config["DEST"]+"/4_varcall/combined_filtered.vcf.gz"
+
+rule combine_vcf:
+	input:
+		[x for x in FILENAMES]
+	output:
+		config["DEST"]+"/4_varcall/combined.vcf"
+	params:
+		config["REF"]
+	resources: cpus=20, mem_mb=1000000, time_min=14400
+	shell:
+		"""
+		module add java_jdk/1.8.231
+		module add gatk/4.1.4.1
+		module add htslib/1.9
+		list=$(echo {input} | sed 's/ / --variant /g' | sed 's/^/--variant /')
+		echo $list
+		gatk --java-options "-Xmx200G" CombineGVCFs $list -O {output} -R {params}
+		"""
+
+rule joint_calling:
+	input:
+		samples=config["DEST"]+"/4_varcall/combined.vcf",
+		ref=config["REF"]
+	output:
+		config["DEST"]+"/4_varcall/combined_JC.vcf"
+	resources: cpus=20, mem_mb=500000, time_min=14400
+	shell:
+		"""
+		module add java_jdk/1.8.231
+		module add gatk/4.1.4.1
+		gatk --java-options "-Xmx500G" GenotypeGVCFs -R {input.ref} -V {input.samples} --max-alternate-alleles 3 -O {output}
+		"""
+
+rule count_alleles:
+	input:
+		vcf=config["DEST"]+"/4_varcall/combined_JC.vcf"
+	output:
+		counts=config["DEST"]+"/4_varcall/allele_counts.out"
+	log:
+		config["DEST"]+"/4_varcall/allele_counts.log"
+	resources: cpus=1, mem_mb=4048, time_min=144000
+	shell:
+		"""
+		unset PERL5LIB
+		cat {input.vcf} | perl /data/Palmetto_sync/Projects/jopoole_dsrp_dna/jgil_scripts/alleleCounts.pl > {output.counts} 2> {log} 
+		"""
+
+rule run_jgil:
+	input:
+		config["DEST"]+"/4_varcall/allele_counts.out"
+	output:
+		vcf=config["DEST"]+"/4_varcall/combined_jgil.vcf"		
+	log:
+		config["DEST"]+"/4_varcall/combined_jgil.log"		
+	resources: cpus=2, mem_mb=20000, time_min=144000
+	shell:
+		"""
+		unset PERL5LIB
+		module load R/3.5.0
+		Rscript /data/Palmetto_sync/Projects/jopoole_dsrp_dna/jgil_scripts/jgil.R {input} {output.vcf} > {log} 2>&1
+		"""
+
+rule select_indels:
+	input:
+		ref=config["REF"],
+		samples=config["DEST"]+"/4_varcall/combined_jgil.vcf"
+	output:
+		config["DEST"]+"/4_varcall/combined_indels.vcf"
+	params:
+		indel="INDEL"
+	resources: cpus=8, mem_mb=40000, time_min=14400
+	shell:
+		"""
+		module add java_jdk/1.8.231
+		module add gatk/4.1.4.1
+		gatk SelectVariants -R {input.ref} -V {input.samples} --select-type-to-include {params.indel} -O {output}
+		"""
+
+rule select_snps:
+	input:
+		ref=config["REF"],
+		samples=config["DEST"]+"/4_varcall/combined_jgil.vcf"
+	output:
+		config["DEST"]+"/4_varcall/combined_snps.vcf"
+	params:
+		indel="SNP"
+	resources: cpus=8, mem_mb=40000, time_min=14400
+	shell:
+		"""
+		module add java_jdk/1.8.231
+		module add gatk/4.1.4.1
+		gatk SelectVariants -R {input.ref} -V {input.samples} --select-type-to-include {params.indel} -O {output}
+		"""			
+
+rule filter_indels:
+	input:
+		config["DEST"]+"/4_varcall/combined_indels.vcf"
+	output:
+		config["DEST"]+"/4_varcall/filtered_indels.vcf"
+	resources: cpus=2, mem_mb=20000, time_min=14400
+	shell:
+		"""
+		module add java_jdk/1.8.231
+		module add gatk/4.1.4.1
+		gatk VariantFiltration \
+    		-V {input} \
+    		-filter "QD < 2.0" --filter-name "QD2" \
+    		-filter "QUAL < 30.0" --filter-name "QUAL30" \
+    		-filter "FS > 200.0" --filter-name "FS200" \
+    		-filter "ReadPosRankSum < -20.0" --filter-name "ReadPosRankSum-20" \
+    		-O {output}
+    		"""
+
+rule filter_snps:
+	input:
+		config["DEST"]+"/4_varcall/combined_snps.vcf"
+	output:
+		config["DEST"]+"/4_varcall/filtered_snps.vcf"
+	resources: cpus=2, mem_mb=20000, time_min=14400
+	shell:
+		"""
+		module add java_jdk/1.8.231
+		module add gatk/4.1.4.1
+		gatk VariantFiltration \
+		-V {input} \
+		-filter "QD < 2.0" --filter-name "QD2" \
+		-filter "QUAL < 30.0" --filter-name "QUAL30" \
+		-filter "SOR > 3.0" --filter-name "SOR3" \
+		-filter "FS > 60.0" --filter-name "FS60" \
+		-filter "MQ < 40.0" --filter-name "MQ40" \
+		-filter "MQRankSum < -12.5" --filter-name "MQRankSum-12.5" \
+		-filter "ReadPosRankSum < -8.0" --filter-name "ReadPosRankSum-8" \
+		-O {output}
+		"""
+
+rule compress_indels:
+	input:
+		config["DEST"]+"/4_varcall/filtered_indels.vcf"
+	output:
+		config["DEST"]+"/4_varcall/filtered_indels.vcf.gz"
+	resources: cpus=2, mem_mb=20000, time_min=14400
+	shell:
+		"""
+		module load java_jdk/1.8.231
+		module load picard/2.21.7 
+		module load gatk/4.1.4.1
+		module load htslib/1.9
+		bgzip -c {input} > {output}
+		tabix -p vcf {output}
+		"""
+
+rule compress_snps:
+	input:
+		config["DEST"]+"/4_varcall/filtered_snps.vcf"
+	output:
+		config["DEST"]+"/4_varcall/filtered_snps.vcf.gz"
+	resources: cpus=2, mem_mb=20000, time_min=14400
+	shell:
+		"""
+		module load java_jdk/1.8.231
+		module load picard/2.21.7 
+		module load gatk/4.1.4.1
+		module load htslib/1.9
+		bgzip -c {input} > {output}
+		tabix -p vcf {output}
+		"""
+
+rule merge_filtered:
+	input:
+		indel=config["DEST"]+"/4_varcall/filtered_indels.vcf.gz",
+		snp=config["DEST"]+"/4_varcall/filtered_snps.vcf.gz"
+	output:
+		filtered=config["DEST"]+"/4_varcall/combined_filtered.vcf",
+		compressed=config["DEST"]+"/4_varcall/combined_filtered.vcf.gz"
+	resources: cpus=2, mem_mb=20000, time_min=14400
+	shell:
+		"""
+		module load java_jdk/1.8.231
+		module load picard/2.21.7 
+		module load gatk/4.1.4.1
+		module load htslib/1.9
+		gatk SortVcf -I {input.snp} -I {input.indel} -O {output.filtered}
+		bgzip -c {output.filtered} > {output.compressed}
+		tabix -p vcf {output.compressed}
+		"""

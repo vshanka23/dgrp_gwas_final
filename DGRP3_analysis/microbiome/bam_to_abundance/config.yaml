@@ -1,0 +1,3 @@
+YAMP_SCRIPTS: "/data2/Palmetto_sync/Projects/vshanka_scPMI_dna/scripts"
+WORKDIR: "/data/Palmetto_sync/Projects/vshanka_dgrp3_dna/set1/6_microbiome"
+SOURCE: "/data/Palmetto_sync/Projects/vshanka_dgrp3_dna/set1/3_align/6_bqsr"

@@ -1,0 +1,6 @@
+SOURCE: /data/Palmetto_sync/Novaseq/FASTQ/DGRP3_set2
+DEST: /data/Palmetto_sync/Projects/vshanka_dgrp3_dna/set2
+EXT: "_001.fastq.gz"
+INDEX_REF: /data/databases/d_mel/d_mel_6.13_ncbi/indexed/bwa/GCA_000001215.4_Release_6_plus_ISO1_MT_genomic.fna
+REF: /data/databases/d_mel/d_mel_6.13_ncbi/GCA_000001215.4_Release_6_plus_ISO1_MT_genomic.fna
+KNOWNVCF: /data/databases/d_mel/d_mel_6.13_ncbi/known/GCA_000001215.4_current_ids_renamed.vcf.gz

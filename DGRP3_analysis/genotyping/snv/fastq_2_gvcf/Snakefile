@@ -1,0 +1,328 @@
+configfile: "DGRP3_varcall.yaml"
+
+SAMPLES=sorted(glob_wildcards(config["SOURCE"]+"/{samples}"+config["EXT"]).samples)
+SAMPLES_NF=[]
+import re
+for item in SAMPLES:
+	var1=re.sub('_L00[1-2]_R[1-2]','',str(item))
+	SAMPLES_NF.append(var1)
+
+SAMPLES_SET = set(SAMPLES_NF)
+SAMPLES_UNIQ = list(SAMPLES_SET)
+
+rule all:
+	input:
+		expand(config["DEST"]+"/4_varcall/{SAMPLES_UNIQ}_recal_g.vcf",SAMPLES_UNIQ=SAMPLES_UNIQ)
+
+rule qc_L001:
+	input:
+		R1=config["SOURCE"]+"/{SAMPLES_UNIQ}_L001_R1"+config["EXT"],
+		R2=config["SOURCE"]+"/{SAMPLES_UNIQ}_L001_R2"+config["EXT"]
+	output:
+		R1=config["DEST"]+"/2_qc/{SAMPLES_UNIQ}_L001_R1"+config["EXT"],
+		R2=config["DEST"]+"/2_qc/{SAMPLES_UNIQ}_L001_R2"+config["EXT"],
+		html=config["DEST"]+"/2_qc/{SAMPLES_UNIQ}_L001.html",
+		json=config["DEST"]+"/2_qc/{SAMPLES_UNIQ}_L001.json"
+	resources: cpus=4, mem_mb=20000, time_min=1440
+	shell:
+		"""
+		module add fastp
+		fastp \
+		--thread 4 \
+		-i {input.R1} \
+		-I {input.R2} \
+		-o {output.R1} \
+		-O {output.R2} \
+		-h {output.html} \
+		-j {output.json}
+		"""
+
+rule qc_L002:
+	input:
+		R1=config["SOURCE"]+"/{SAMPLES_UNIQ}_L002_R1"+config["EXT"],
+		R2=config["SOURCE"]+"/{SAMPLES_UNIQ}_L002_R2"+config["EXT"]
+	output:
+		R1=config["DEST"]+"/2_qc/{SAMPLES_UNIQ}_L002_R1"+config["EXT"],
+		R2=config["DEST"]+"/2_qc/{SAMPLES_UNIQ}_L002_R2"+config["EXT"],
+		html=config["DEST"]+"/2_qc/{SAMPLES_UNIQ}_L002.html",
+		json=config["DEST"]+"/2_qc/{SAMPLES_UNIQ}_L002.json"
+	resources: cpus=4, mem_mb=20000, time_min=1440
+	shell:
+		"""
+		module add fastp
+		fastp \
+		--thread 4 \
+		-i {input.R1} \
+		-I {input.R2} \
+		-o {output.R1} \
+		-O {output.R2} \
+		-h {output.html} \
+		-j {output.json}
+		"""
+		
+rule align_bwa_mem_L001:
+	input:
+		R1=config["DEST"]+"/2_qc/{SAMPLES_UNIQ}_L001_R1"+config["EXT"],
+		R2=config["DEST"]+"/2_qc/{SAMPLES_UNIQ}_L001_R2"+config["EXT"]
+	output:
+		config["DEST"]+"/3_align/1_rawbam/{SAMPLES_UNIQ}_L001.bam"
+	params:
+		config["INDEX_REF"]
+	resources: cpus=4, mem_mb=20000, time_min=1440
+	shell:
+		"""
+		module add samtools/1.10
+		module add bwa/0.7.17
+		read_tmp=$(head -n 1 < <(zcat {input.R1}) | sed 's/:/\\t/g')
+		readGroup="@RG\\\\tID:$(echo $read_tmp | awk '{{print $3 "." $4}}')\\\\tCN:ClemsonCHG\\\\tSM:{wildcards.SAMPLES_UNIQ}\\\\tLB:{wildcards.SAMPLES_UNIQ}\\\\tPL:illumina"
+		bwa mem \
+		-M \
+		-t 4 \
+		-R $readGroup \
+		{params} \
+		{input.R1} \
+		{input.R2} | \
+		samtools view -Sb - \
+		> {output};
+		"""
+		
+rule align_bwa_mem_L002:
+	input:
+		R1=config["DEST"]+"/2_qc/{SAMPLES_UNIQ}_L002_R1"+config["EXT"],
+		R2=config["DEST"]+"/2_qc/{SAMPLES_UNIQ}_L002_R2"+config["EXT"]
+	output:
+		config["DEST"]+"/3_align/1_rawbam/{SAMPLES_UNIQ}_L002.bam"
+	params:
+		config["INDEX_REF"]
+	resources: cpus=4, mem_mb=20000, time_min=1440
+	shell:
+		"""
+		module add samtools/1.10
+		module add bwa/0.7.17
+		read_tmp=$(head -n 1 < <(zcat {input.R1}) | sed 's/:/\\t/g')
+		readGroup="@RG\\\\tID:$(echo $read_tmp | awk '{{print $3 "." $4}}')\\\\tCN:ClemsonCHG\\\\tSM:{wildcards.SAMPLES_UNIQ}\\\\tLB:{wildcards.SAMPLES_UNIQ}\\\\tPL:illumina"
+		bwa mem \
+		-M \
+		-t 4 \
+		-R $readGroup \
+		{params} \
+		{input.R1} \
+		{input.R2} | \
+		samtools view -Sb - \
+		> {output};
+		"""
+		
+rule bam_sort_L001:
+	input:
+		config["DEST"]+"/3_align/1_rawbam/{SAMPLES_UNIQ}_L001.bam"
+	output:
+		config["DEST"]+"/3_align/2_sort/{SAMPLES_UNIQ}_L001_rsort.bam"
+	params:
+		config["DEST"]+"/3_align/1_rawbam/tmp_{SAMPLES_UNIQ}_L001"
+	resources: cpus=4, mem_mb=20000, time_min=1440
+	shell:
+		"""
+		module add samtools/1.10
+		samtools sort \
+		-n \
+		-@ 4 \
+		-T {params} \
+		-o {output} \
+		{input} ;
+		"""
+rule bam_sort_L002:
+	input:
+		config["DEST"]+"/3_align/1_rawbam/{SAMPLES_UNIQ}_L002.bam"
+	output:
+		config["DEST"]+"/3_align/2_sort/{SAMPLES_UNIQ}_L002_rsort.bam"
+	params:
+		config["DEST"]+"/3_align/1_rawbam/tmp_{SAMPLES_UNIQ}_L002"
+	resources: cpus=4, mem_mb=20000, time_min=1440
+	shell:
+		"""
+		module add samtools/1.10
+		samtools sort \
+		-n \
+		-@ 4 \
+		-T {params} \
+		-o {output} \
+		{input} ;
+		"""
+		
+rule bam_fixmate_L001:
+	input:
+		config["DEST"]+"/3_align/2_sort/{SAMPLES_UNIQ}_L001_rsort.bam"
+	output:
+		config["DEST"]+"/3_align/3_fixmate/{SAMPLES_UNIQ}_L001_fixmate.bam"
+	resources: cpus=4, mem_mb=20000, time_min=1440
+	shell:
+		"""
+		module add samtools/1.10
+		samtools fixmate \
+		-m \
+		-@ 4 \
+		{input} \
+		{output} ;
+		"""
+		
+rule bam_fixmate_L002:
+	input:
+		config["DEST"]+"/3_align/2_sort/{SAMPLES_UNIQ}_L002_rsort.bam"
+	output:
+		config["DEST"]+"/3_align/3_fixmate/{SAMPLES_UNIQ}_L002_fixmate.bam"
+	resources: cpus=4, mem_mb=20000, time_min=1440
+	shell:
+		"""
+		module add samtools/1.10
+		samtools fixmate \
+		-m \
+		-@ 4 \
+		{input} \
+		{output} ;
+		"""
+		
+rule bam_possort_L001:
+	input:
+		config["DEST"]+"/3_align/3_fixmate/{SAMPLES_UNIQ}_L001_fixmate.bam"
+	output:
+		config["DEST"]+"/3_align/4_possort/{SAMPLES_UNIQ}_L001_psort.bam"
+	params:
+		config["DEST"]+"/3_align/4_possort/tmp_{SAMPLES_UNIQ}_L001"
+	resources: cpus=4, mem_mb=20000, time_min=1440
+	shell:
+		"""
+		module add samtools/1.10
+		samtools sort \
+		-@ 4 \
+		-T {params} \
+		-o {output} \
+		{input} ;
+		"""
+
+rule bam_possort_L002:
+	input:
+		config["DEST"]+"/3_align/3_fixmate/{SAMPLES_UNIQ}_L002_fixmate.bam"
+	output:
+		config["DEST"]+"/3_align/4_possort/{SAMPLES_UNIQ}_L002_psort.bam"
+	params:
+		config["DEST"]+"/3_align/4_possort/tmp_{SAMPLES_UNIQ}_L002"
+	resources: cpus=4, mem_mb=20000, time_min=1440
+	shell:
+		"""
+		module add samtools/1.10
+		samtools sort \
+		-@ 4 \
+		-T {params} \
+		-o {output} \
+		{input} ;
+		"""
+rule bam_merge_lanes:
+	input:
+		L1=config["DEST"]+"/3_align/4_possort/{SAMPLES_UNIQ}_L001_psort.bam",
+		L2=config["DEST"]+"/3_align/4_possort/{SAMPLES_UNIQ}_L002_psort.bam"
+	output:
+		config["DEST"]+"/3_align/4_possort/{SAMPLES_UNIQ}_merged_psort.bam"
+	resources: cpus=4, mem_mb=20000, time_min=1440
+	shell:
+		"""
+		module add samtools/1.10
+		samtools merge \
+		-@ 4 \
+		-f {output} \
+		{input.L1} {input.L2} ;
+		samtools index -@ 8 {output} ;
+		"""
+
+rule bam_markdup:
+	input:
+		config["DEST"]+"/3_align/4_possort/{SAMPLES_UNIQ}_merged_psort.bam"
+	output:
+		config["DEST"]+"/3_align/5_dedup/{SAMPLES_UNIQ}_dedup.bam"
+	params:
+		metrics=config["DEST"]+"/3_align/5_dedup/{SAMPLES_UNIQ}_bam.metrics",
+		tmp_dir=config["DEST"]+"/3_align/5_dedup"
+	resources: cpus=4, mem_mb=20000, time_min=1440
+	shell:
+		"""
+		module add java_jdk/1.8.231
+		module add picard/2.21.7
+		module add gatk/4.1.4.1
+		gatk --java-options "-Xmx20G -XX:ConcGCThreads=1" \
+		MarkDuplicates \
+		--USE_JDK_DEFLATER true \
+		--USE_JDK_INFLATER true \
+		--MAX_RECORDS_IN_RAM 50000 \
+		--INPUT {input} \
+		--METRICS_FILE {params.metrics} \
+		--TMP_DIR {params.tmp_dir} \
+		--CREATE_INDEX true \
+		--OUTPUT {output} ;
+		"""
+
+rule bqsr:
+	input:
+		bam=config["DEST"]+"/3_align/5_dedup/{SAMPLES_UNIQ}_dedup.bam",
+		knownvcf=config["KNOWNVCF"]
+		
+	output:
+		config["DEST"]+"/3_align/6_bqsr/{SAMPLES_UNIQ}_recaltable.grp"
+	params:
+		config["REF"]
+	resources: cpus=4, mem_mb=40000, time_min=1440
+	shell:
+		"""
+		module add java_jdk/1.8.231
+		module add picard/2.21.7 
+		module add gatk/4.1.4.1
+		module add htslib/1.9
+		gatk BaseRecalibrator \
+		-R {params} \
+		-I {input.bam} \
+		--known-sites {input.knownvcf} \
+		-O {output} ;
+		"""
+		
+rule recalibrate:
+	input:
+		bam=config["DEST"]+"/3_align/5_dedup/{SAMPLES_UNIQ}_dedup.bam",
+		recaltable=config["DEST"]+"/3_align/6_bqsr/{SAMPLES_UNIQ}_recaltable.grp"
+	output:
+		config["DEST"]+"/3_align/6_bqsr/{SAMPLES_UNIQ}_recal.bam"
+	params:
+		config["REF"]
+	resources: cpus=4, mem_mb=40000, time_min=1440
+	shell:
+		"""
+		module add java_jdk/1.8.231
+		module add picard/2.21.7 
+		module add gatk/4.1.4.1
+		module add htslib/1.9
+		gatk ApplyBQSR \
+		-R {params} \
+		-I {input.bam} \
+		-bqsr {input.recaltable} \
+		-O {output} ;
+		"""
+
+rule haplotypecaller:
+	input:
+		config["DEST"]+"/3_align/6_bqsr/{SAMPLES_UNIQ}_recal.bam"
+	output:
+		VCF=config["DEST"]+"/4_varcall/{SAMPLES_UNIQ}_recal_g.vcf",
+		BAMOUT=config["DEST"]+"/4_varcall/{SAMPLES_UNIQ}_recal_bamout.bam"
+	params:
+		config["REF"]
+	resources: cpus=4, mem_mb=40000, time_min=1440
+	shell:
+		"""
+		module add java_jdk/1.8.231
+		module add gatk/4.1.4.1
+		module add htslib/1.9
+		gatk HaplotypeCaller \
+		-I {input} \
+		-O {output.VCF} \
+		-R {params} \
+		-ERC GVCF \
+		--native-pair-hmm-threads 8 \
+		-bamout {output.BAMOUT} ;
+		"""
